@@ -7,6 +7,7 @@ use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
@@ -19,7 +20,8 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        // Validator ile manuel validasyon yap
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'description' => 'required|string',
             'image' => 'required|file|image',
@@ -30,25 +32,32 @@ class ProjectController extends Controller
             'tags.*' => 'integer|exists:tags,id',
         ]);
     
+        // Validasyon başarısız olursa hata mesajlarını döndür
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+    
+        // Validasyonu geçmiş verileri al
+        $validatedData = $validator->validated();
+    
         // Türkçe karakterleri İngilizce'ye dönüştür ve boşlukları alt tire ile değiştir
         $validatedData['name'] = Str::slug($validatedData['name'], '_');
     
         $validatedData['image_width'] = 300;
         $validatedData['image_height'] = 252;
     
-
         // Resmi storage'a yükle ve URL'yi oluştur
         $imagePath = $request->file('image')->storeAs(
             'images', 
             $validatedData['name'] . '.' . $request->file('image')->extension(),
             'public'
         );
-        
-        $validatedData['image_url'] = '/storage/' . $imagePath;
-
-
-
     
+        $validatedData['image_url'] = '/storage/' . $imagePath;
+    
+        // Project oluştur
         $project = Project::create($validatedData);
     
         // İlk etiketi otomatik olarak ekle

@@ -43,12 +43,6 @@ class DatabaseSeeder extends Seeder
         
 
         
-        // Create Projects with Tags
-        Project::factory(10)->create()->each(function ($project) use ($tags) {
-            $projectTags = Tag::inRandomOrder()->take(rand(1, 4))->get();
-            $projectTags->prepend(Tag::find(1)); // Otomatik olarak birinci etiketi ekle
-            $project->tags()->attach($projectTags);
-        });
         
     }
 }
